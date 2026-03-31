@@ -478,8 +478,8 @@ export default function App() {
 
                 <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} viewBox="0 0 100 100" preserveAspectRatio="none">
                   <defs>
-                    <marker id="route-arrow-mobile" markerWidth="2.5" markerHeight="2.5" refX="2" refY="1.25" orient="auto" markerUnits="strokeWidth">
-                      <path d="M0,0 L2.5,1.25 L0,2.5 z" fill="currentColor" />
+                    <marker id="route-arrow-mobile" markerWidth="3" markerHeight="3" refX="1.5" refY="1.5" orient="auto" markerUnits="strokeWidth">
+                      <circle cx="1.5" cy="1.5" r="1.2" fill="currentColor" />
                     </marker>
                   </defs>
 
