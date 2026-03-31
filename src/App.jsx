@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const TODAY = new Date().toISOString().split("T")[0];
 const PLAYER_OPTIONS = ["X", "Y", "C", "Z", "Q"];
@@ -177,9 +177,29 @@ export default function App() {
     []
   );
 
-  const [fields, setFields] = useState(initialFields);
-  const [selectedFieldId, setSelectedFieldId] = useState(initialFields[0].id);
-  const [selectedDate, setSelectedDate] = useState(TODAY);
+  const [fields, setFields] = useState(() => {
+    try {
+      const saved = localStorage.getItem("flag-journal-fields");
+      return saved ? JSON.parse(saved) : initialFields;
+    } catch {
+      return initialFields;
+    }
+  });
+  const [selectedFieldId, setSelectedFieldId] = useState(() => {
+    try {
+      const saved = localStorage.getItem("flag-journal-selected-field-id");
+      return saved ? JSON.parse(saved) : initialFields[0].id;
+    } catch {
+      return initialFields[0].id;
+    }
+  });
+  const [selectedDate, setSelectedDate] = useState(() => {
+    try {
+      return localStorage.getItem("flag-journal-selected-date") || TODAY;
+    } catch {
+      return TODAY;
+    }
+  });
   const [mode, setMode] = useState("marker");
   const [showFieldSheet, setShowFieldSheet] = useState(false);
   const [showAddInput, setShowAddInput] = useState(false);
@@ -195,6 +215,24 @@ export default function App() {
 
   const selectedField = fields.find((field) => field.id === selectedFieldId) ?? fields[0];
   const selectedEntry = selectedField?.dateEntries?.[selectedDate] ?? createEntry();
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("flag-journal-fields", JSON.stringify(fields));
+    } catch {}
+  }, [fields]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("flag-journal-selected-field-id", JSON.stringify(selectedFieldId));
+    } catch {}
+  }, [selectedFieldId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("flag-journal-selected-date", selectedDate);
+    } catch {}
+  }, [selectedDate]);
 
   const updateField = (id, updater) => {
     setFields((prev) => prev.map((field) => (field.id === id ? updater(field) : field)));
@@ -440,8 +478,8 @@ export default function App() {
 
                 <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} viewBox="0 0 100 100" preserveAspectRatio="none">
                   <defs>
-                    <marker id="route-arrow-mobile" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto" markerUnits="strokeWidth">
-                      <path d="M0,0 L4,2 L0,4 z" fill="currentColor" />
+                    <marker id="route-arrow-mobile" markerWidth="2.5" markerHeight="2.5" refX="2" refY="1.25" orient="auto" markerUnits="strokeWidth">
+                      <path d="M0,0 L2.5,1.25 L0,2.5 z" fill="currentColor" />
                     </marker>
                   </defs>
 
