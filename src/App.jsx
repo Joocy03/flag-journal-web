@@ -477,8 +477,6 @@ export default function App() {
                 </div>
 
                 <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} viewBox="0 0 100 100" preserveAspectRatio="none">
-                  
-
                   {selectedEntry.routes.map((route, i) => {
                     const stroke = getRouteStroke(route);
                     const points = getRoutePoints(route);
@@ -494,41 +492,30 @@ export default function App() {
                           fill="none"
                           vectorEffect="non-scaling-stroke"
                         />
-                        {lastPoint && (
-                          <circle cx={lastPoint.x} cy={lastPoint.y} r="0.55" fill={stroke} />
-                        )}
+                        {lastPoint ? <circle cx={lastPoint.x} cy={lastPoint.y} r="0.55" fill={stroke} /> : null}
                       </g>
                     );
                   })}
 
-                  {drawing && currentRoute.length > 1 && (() => {
-                    const lastPoint = currentRoute[currentRoute.length - 1];
-                    const stroke = PLAYER_COLORS[selectedRoutePlayer].stroke;
-                    return (
-                      <g>
-                        <polyline
-                          points={currentRoute.map((p) => `${p.x},${p.y}`).join(" ")}
-                          stroke={stroke}
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          fill="none"
-                          vectorEffect="non-scaling-stroke"
-                        />
-                        {lastPoint && <circle cx={lastPoint.x} cy={lastPoint.y} r="0.55" fill={stroke} />}
-                      </g>
-                    );
-                  })()}
-                      stroke={PLAYER_COLORS[selectedRoutePlayer].stroke}
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      fill="none"
-                      vectorEffect="non-scaling-stroke"
-                      
-                      style={{ color: PLAYER_COLORS[selectedRoutePlayer].stroke }}
-                    />
-                  )}
+                  {drawing && currentRoute.length > 1 ? (
+                    <g>
+                      <polyline
+                        points={currentRoute.map((p) => `${p.x},${p.y}`).join(" ")}
+                        stroke={PLAYER_COLORS[selectedRoutePlayer].stroke}
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                      <circle
+                        cx={currentRoute[currentRoute.length - 1].x}
+                        cy={currentRoute[currentRoute.length - 1].y}
+                        r="0.55"
+                        fill={PLAYER_COLORS[selectedRoutePlayer].stroke}
+                      />
+                    </g>
+                  ) : null}
                 </svg>
 
                 {selectedEntry.markers.map((marker) => {
