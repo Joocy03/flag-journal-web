@@ -492,7 +492,7 @@ export default function App() {
                           fill="none"
                           vectorEffect="non-scaling-stroke"
                         />
-                        {lastPoint ? <circle cx={lastPoint.x} cy={lastPoint.y} r="0.55" fill={stroke} /> : null}
+                        {lastPoint ? <ellipse cx={lastPoint.x} cy={lastPoint.y} rx="0.66" ry="0.58" fill={stroke} /> : null}
                       </g>
                     );
                   })}
@@ -508,10 +508,11 @@ export default function App() {
                         fill="none"
                         vectorEffect="non-scaling-stroke"
                       />
-                      <circle
+                      <ellipse
                         cx={currentRoute[currentRoute.length - 1].x}
                         cy={currentRoute[currentRoute.length - 1].y}
-                        r="0.55"
+                        rx="0.66"
+                        ry="0.58"
                         fill={PLAYER_COLORS[selectedRoutePlayer].stroke}
                       />
                     </g>
