@@ -477,40 +477,55 @@ export default function App() {
                 </div>
 
                 <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} viewBox="0 0 100 100" preserveAspectRatio="none">
-                  <defs>
-                    <marker id="route-arrow-mobile" markerWidth="1.2" markerHeight="1.2" refX="0.6" refY="0.6" orient="auto" markerUnits="strokeWidth">
-                      <circle cx="0.6" cy="0.6" r="0.45" fill="context-stroke" />
-                    </marker>
-                  </defs>
+                  
 
                   {selectedEntry.routes.map((route, i) => {
                     const stroke = getRouteStroke(route);
+                    const points = getRoutePoints(route);
+                    const lastPoint = points[points.length - 1];
                     return (
-                      <polyline
-                        key={Array.isArray(route) ? `legacy-${i}` : route.id}
-                        points={getRoutePoints(route).map((p) => `${p.x},${p.y}`).join(" ")}
-                        stroke={stroke}
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        fill="none"
-                        vectorEffect="non-scaling-stroke"
-                        markerEnd="url(#route-arrow-mobile)"
-                        style={{ color: stroke }}
-                      />
+                      <g key={Array.isArray(route) ? `legacy-${i}` : route.id}>
+                        <polyline
+                          points={points.map((p) => `${p.x},${p.y}`).join(" ")}
+                          stroke={stroke}
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="none"
+                          vectorEffect="non-scaling-stroke"
+                        />
+                        {lastPoint && (
+                          <circle cx={lastPoint.x} cy={lastPoint.y} r="0.55" fill={stroke} />
+                        )}
+                      </g>
                     );
                   })}
 
-                  {drawing && currentRoute.length > 1 && (
-                    <polyline
-                      points={currentRoute.map((p) => `${p.x},${p.y}`).join(" ")}
+                  {drawing && currentRoute.length > 1 && (() => {
+                    const lastPoint = currentRoute[currentRoute.length - 1];
+                    const stroke = PLAYER_COLORS[selectedRoutePlayer].stroke;
+                    return (
+                      <g>
+                        <polyline
+                          points={currentRoute.map((p) => `${p.x},${p.y}`).join(" ")}
+                          stroke={stroke}
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="none"
+                          vectorEffect="non-scaling-stroke"
+                        />
+                        {lastPoint && <circle cx={lastPoint.x} cy={lastPoint.y} r="0.55" fill={stroke} />}
+                      </g>
+                    );
+                  })()}
                       stroke={PLAYER_COLORS[selectedRoutePlayer].stroke}
                       strokeWidth="1.8"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       fill="none"
                       vectorEffect="non-scaling-stroke"
-                      markerEnd="url(#route-arrow-mobile)"
+                      
                       style={{ color: PLAYER_COLORS[selectedRoutePlayer].stroke }}
                     />
                   )}
