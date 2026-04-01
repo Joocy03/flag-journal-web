@@ -7,7 +7,7 @@ const PLAYER_COLORS = {
   X: { bg: "#ef4444", stroke: "#ef4444", text: "#ffffff" },
   Y: { bg: "#3b82f6", stroke: "#3b82f6", text: "#ffffff" },
   C: { bg: "#22c55e", stroke: "#22c55e", text: "#ffffff" },
-  Z: { bg: "#facc15", stroke: "#ffffff", text: "#ffffff" },
+  Z: { bg: "#facc15", stroke: "#facc15", text: "#ffffff" },
   Q: { bg: "#a855f7", stroke: "#a855f7", text: "#ffffff" },
 };
 
@@ -85,6 +85,7 @@ const styles = {
     padding: 16,
     boxSizing: "border-box",
     overflow: "hidden",
+    width: "100%",
   },
   section: {
     marginTop: 12,
@@ -94,6 +95,7 @@ const styles = {
     padding: 12,
     boxSizing: "border-box",
     overflow: "hidden",
+    width: "100%",
   },
   title: { margin: 0, fontSize: 18, fontWeight: 700 },
   sub: { margin: "4px 0 12px", fontSize: 14, color: "#64748b" },
@@ -143,15 +145,19 @@ const styles = {
 };
 
 const createEntry = () => ({ journal: "", markers: [], routes: [] });
+
 const createField = (id, title) => ({
   id,
   title,
-  dateEntries: { [TODAY]: createEntry() },
+  dateEntries: {
+    [TODAY]: createEntry(),
+  },
 });
 
 function formatDateLabel(dateString) {
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return dateString;
+
   return new Intl.DateTimeFormat("ko-KR", {
     year: "numeric",
     month: "long",
@@ -171,10 +177,11 @@ function getRouteStroke(route) {
 }
 
 function clampMenuPosition(pos) {
-  const menuWidth = 30;
-  const menuHalf = menuWidth / 2;
+  const menuWidthPercent = 30;
+  const half = menuWidthPercent / 2;
+
   return {
-    x: Math.min(Math.max(pos.x, menuHalf + 2), 100 - menuHalf - 2),
+    x: Math.min(Math.max(pos.x, half + 2), 100 - half - 2),
     y: Math.min(Math.max(pos.y, 8), 92),
   };
 }
@@ -197,6 +204,7 @@ export default function App() {
       return initialFields;
     }
   });
+
   const [selectedFieldId, setSelectedFieldId] = useState(() => {
     try {
       const saved = localStorage.getItem("flag-journal-selected-field-id");
@@ -205,6 +213,7 @@ export default function App() {
       return initialFields[0].id;
     }
   });
+
   const [selectedDate, setSelectedDate] = useState(() => {
     try {
       return localStorage.getItem("flag-journal-selected-date") || TODAY;
@@ -212,18 +221,25 @@ export default function App() {
       return TODAY;
     }
   });
+
   const [mode, setMode] = useState("marker");
   const [mobileView, setMobileView] = useState("sheet");
+
   const [showAddInput, setShowAddInput] = useState(false);
   const [newFieldTitle, setNewFieldTitle] = useState("");
+
   const [editingFieldId, setEditingFieldId] = useState(null);
   const [editingFieldTitle, setEditingFieldTitle] = useState("");
   const [fieldActionMenuId, setFieldActionMenuId] = useState(null);
+
   const [markerMenu, setMarkerMenu] = useState(null);
+
   const [drawing, setDrawing] = useState(false);
   const [currentRoute, setCurrentRoute] = useState([]);
   const [selectedRoutePlayer, setSelectedRoutePlayer] = useState("X");
+
   const [draggingMarkerId, setDraggingMarkerId] = useState(null);
+
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchStartY, setTouchStartY] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
@@ -231,10 +247,14 @@ export default function App() {
 
   const fieldRef = useRef(null);
   const fieldPressTimerRef = useRef(null);
+  const fieldLongPressTriggeredRef = useRef(false);
   const suppressNextClickRef = useRef(false);
 
-  const selectedField = fields.find((field) => field.id === selectedFieldId) ?? fields[0];
-  const selectedEntry = selectedField?.dateEntries?.[selectedDate] ?? createEntry();
+  const selectedField =
+    fields.find((field) => field.id === selectedFieldId) ?? fields[0];
+
+  const selectedEntry =
+    selectedField?.dateEntries?.[selectedDate] ?? createEntry();
 
   useEffect(() => {
     try {
@@ -244,7 +264,10 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem("flag-journal-selected-field-id", JSON.stringify(selectedFieldId));
+      localStorage.setItem(
+        "flag-journal-selected-field-id",
+        JSON.stringify(selectedFieldId)
+      );
     } catch {}
   }, [selectedFieldId]);
 
@@ -255,7 +278,9 @@ export default function App() {
   }, [selectedDate]);
 
   const updateField = (id, updater) => {
-    setFields((prev) => prev.map((field) => (field.id === id ? updater(field) : field)));
+    setFields((prev) =>
+      prev.map((field) => (field.id === id ? updater(field) : field))
+    );
   };
 
   const ensureDateEntry = (field, dateKey) => ({
@@ -287,6 +312,7 @@ export default function App() {
   const handleSwipeStart = (e) => {
     const x = e.touches?.[0]?.clientX;
     const y = e.touches?.[0]?.clientY;
+
     if (typeof x === "number" && typeof y === "number") {
       setTouchStartX(x);
       setTouchStartY(y);
@@ -298,6 +324,7 @@ export default function App() {
   const handleSwipeMove = (e) => {
     const x = e.touches?.[0]?.clientX;
     const y = e.touches?.[0]?.clientY;
+
     if (typeof x === "number" && typeof y === "number") {
       setTouchEndX(x);
       setTouchEndY(y);
@@ -305,11 +332,21 @@ export default function App() {
   };
 
   const handleSwipeEnd = () => {
-    if (touchStartX == null || touchEndX == null || touchStartY == null || touchEndY == null) return;
+    if (
+      touchStartX == null ||
+      touchEndX == null ||
+      touchStartY == null ||
+      touchEndY == null
+    ) {
+      return;
+    }
+
     const deltaX = touchStartX - touchEndX;
     const deltaY = touchStartY - touchEndY;
+
     if (Math.abs(deltaX) < 50) return;
     if (Math.abs(deltaY) > Math.abs(deltaX) * 0.8) return;
+
     if (deltaX > 0) setMobileView("journal");
     else setMobileView("field");
   };
@@ -318,8 +355,10 @@ export default function App() {
 
   const getPos = (event) => {
     if (!fieldRef.current) return { x: 50, y: 50 };
+
     const rect = fieldRef.current.getBoundingClientRect();
     const point = event.touches?.[0] ?? event.changedTouches?.[0] ?? event;
+
     return {
       x: clamp(((point.clientX - rect.left) / rect.width) * 100),
       y: clamp(((point.clientY - rect.top) / rect.height) * 100),
@@ -329,8 +368,10 @@ export default function App() {
   const addField = () => {
     const title = newFieldTitle.trim();
     if (!title) return;
+
     const nextId = Date.now();
     const nextField = createField(nextId, title);
+
     setFields((prev) => [...prev, nextField]);
     setSelectedFieldId(nextId);
     setNewFieldTitle("");
@@ -340,13 +381,32 @@ export default function App() {
 
   const startFieldPress = (fieldId) => {
     clearTimeout(fieldPressTimerRef.current);
+    fieldLongPressTriggeredRef.current = false;
+
     fieldPressTimerRef.current = setTimeout(() => {
+      fieldLongPressTriggeredRef.current = true;
       setFieldActionMenuId(fieldId);
     }, 450);
   };
 
   const cancelFieldPress = () => {
     clearTimeout(fieldPressTimerRef.current);
+  };
+
+  const handleFieldTap = (fieldId) => {
+    if (fieldLongPressTriggeredRef.current) {
+      fieldLongPressTriggeredRef.current = false;
+      return;
+    }
+
+    setFieldActionMenuId(null);
+    setSelectedFieldId(fieldId);
+    setMobileView("field");
+  };
+
+  const closeFieldActionMenu = () => {
+    setFieldActionMenuId(null);
+    fieldLongPressTriggeredRef.current = false;
   };
 
   const startEditField = (field) => {
@@ -358,7 +418,9 @@ export default function App() {
   const saveFieldTitle = (fieldId) => {
     const title = editingFieldTitle.trim();
     if (!title) return;
+
     updateField(fieldId, (field) => ({ ...field, title }));
+
     setEditingFieldId(null);
     setEditingFieldTitle("");
     setFieldActionMenuId(null);
@@ -372,19 +434,36 @@ export default function App() {
 
   const deleteField = (fieldId) => {
     if (fields.length === 1) return;
+
     const nextFields = fields.filter((field) => field.id !== fieldId);
     setFields(nextFields);
+
     if (selectedFieldId === fieldId) {
       setSelectedFieldId(nextFields[0].id);
     }
+
     setFieldActionMenuId(null);
-    if (editingFieldId === fieldId) cancelEditField();
+
+    if (editingFieldId === fieldId) {
+      cancelEditField();
+    }
   };
 
   const addMarker = (label) => {
     if (!markerMenu) return;
-    const newMarker = { id: Date.now(), label, x: markerMenu.x, y: markerMenu.y };
-    updateSelectedEntry((entry) => ({ ...entry, markers: [...entry.markers, newMarker] }));
+
+    const newMarker = {
+      id: Date.now(),
+      label,
+      x: markerMenu.x,
+      y: markerMenu.y,
+    };
+
+    updateSelectedEntry((entry) => ({
+      ...entry,
+      markers: [...entry.markers, newMarker],
+    }));
+
     setMarkerMenu(null);
   };
 
@@ -398,20 +477,25 @@ export default function App() {
   const handleFieldClick = (event) => {
     if (mode !== "marker") return;
     if (drawing || draggingMarkerId) return;
+
     if (suppressNextClickRef.current) {
       suppressNextClickRef.current = false;
       return;
     }
+
     const pos = clampMenuPosition(getPos(event));
+
     if (markerMenu) {
       setMarkerMenu(null);
       return;
     }
+
     setMarkerMenu(pos);
   };
 
   const startMarkerDrag = (event, markerId) => {
     if (mode !== "marker") return;
+
     event.preventDefault();
     event.stopPropagation();
     setMarkerMenu(null);
@@ -421,14 +505,17 @@ export default function App() {
 
   const handlePointerDown = (event) => {
     if (mode !== "draw") return;
+
     const pos = getPos(event);
 
     let nearestPlayer = selectedRoutePlayer;
     let minDistance = Infinity;
+
     selectedEntry.markers.forEach((marker) => {
       const dx = marker.x - pos.x;
       const dy = marker.y - pos.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
+
       if (distance < minDistance && distance < 8) {
         minDistance = distance;
         nearestPlayer = marker.label;
@@ -444,15 +531,20 @@ export default function App() {
   const handlePointerMove = (event) => {
     if (draggingMarkerId) {
       const pos = getPos(event);
+
       updateSelectedEntry((entry) => ({
         ...entry,
         markers: entry.markers.map((marker) =>
-          marker.id === draggingMarkerId ? { ...marker, x: pos.x, y: pos.y } : marker
+          marker.id === draggingMarkerId
+            ? { ...marker, x: pos.x, y: pos.y }
+            : marker
         ),
       }));
       return;
     }
+
     if (!drawing) return;
+
     const pos = getPos(event);
     setCurrentRoute((prev) => [...prev, pos]);
   };
@@ -460,9 +552,11 @@ export default function App() {
   const finishInteraction = () => {
     if (draggingMarkerId) {
       setDraggingMarkerId(null);
+
       requestAnimationFrame(() => {
         suppressNextClickRef.current = false;
       });
+
       return;
     }
 
@@ -472,7 +566,11 @@ export default function App() {
         player: selectedRoutePlayer,
         points: currentRoute,
       };
-      updateSelectedEntry((entry) => ({ ...entry, routes: [...entry.routes, newRoute] }));
+
+      updateSelectedEntry((entry) => ({
+        ...entry,
+        routes: [...entry.routes, newRoute],
+      }));
     }
 
     setDrawing(false);
@@ -481,7 +579,11 @@ export default function App() {
 
   const undoLastRoute = () => {
     if (!selectedEntry.routes.length) return;
-    updateSelectedEntry((entry) => ({ ...entry, routes: entry.routes.slice(0, -1) }));
+
+    updateSelectedEntry((entry) => ({
+      ...entry,
+      routes: entry.routes.slice(0, -1),
+    }));
   };
 
   const renderFieldCanvas = () => (
@@ -496,9 +598,37 @@ export default function App() {
         onPointerCancel={finishInteraction}
         onPointerLeave={finishInteraction}
       >
-        <div style={{ position: "absolute", insetInline: 0, top: 0, height: "10%", borderBottom: "4px solid rgba(255,255,255,0.9)", background: "rgba(16,185,129,0.55)" }} />
-        <div style={{ position: "absolute", insetInline: 0, bottom: 0, height: "10%", borderTop: "4px solid rgba(255,255,255,0.9)", background: "rgba(16,185,129,0.55)" }} />
-        <div style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 4, transform: "translateY(-50%)", background: "rgba(255,255,255,0.95)" }} />
+        <div
+          style={{
+            position: "absolute",
+            insetInline: 0,
+            top: 0,
+            height: "10%",
+            borderBottom: "4px solid rgba(255,255,255,0.9)",
+            background: "rgba(16,185,129,0.55)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            insetInline: 0,
+            bottom: 0,
+            height: "10%",
+            borderTop: "4px solid rgba(255,255,255,0.9)",
+            background: "rgba(16,185,129,0.55)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: "50%",
+            height: 4,
+            transform: "translateY(-50%)",
+            background: "rgba(255,255,255,0.95)",
+          }}
+        />
 
         {[5, 10, 15, 20, 25, 30, 35, 40, 45].map((yard) => (
           <div
@@ -514,18 +644,56 @@ export default function App() {
           />
         ))}
 
-        <div style={{ position: "absolute", left: "50%", top: 12, transform: "translateX(-50%)", background: "rgba(255,255,255,0.9)", color: "#047857", padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
-          END ZONE
-        </div>
-        <div style={{ position: "absolute", left: "50%", bottom: 12, transform: "translateX(-50%)", background: "rgba(255,255,255,0.9)", color: "#047857", padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: 12,
+            transform: "translateX(-50%)",
+            background: "rgba(255,255,255,0.9)",
+            color: "#047857",
+            padding: "4px 12px",
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
           END ZONE
         </div>
 
-        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} viewBox="0 0 100 100" preserveAspectRatio="none">
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            bottom: 12,
+            transform: "translateX(-50%)",
+            background: "rgba(255,255,255,0.9)",
+            color: "#047857",
+            padding: "4px 12px",
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          END ZONE
+        </div>
+
+        <svg
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+          }}
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
           {selectedEntry.routes.map((route, i) => {
             const stroke = getRouteStroke(route);
             const points = getRoutePoints(route);
             const lastPoint = points[points.length - 1];
+
             return (
               <g key={Array.isArray(route) ? `legacy-${i}` : route.id}>
                 <polyline
@@ -537,7 +705,15 @@ export default function App() {
                   fill="none"
                   vectorEffect="non-scaling-stroke"
                 />
-                {lastPoint ? <ellipse cx={lastPoint.x} cy={lastPoint.y} rx="0.79" ry="0.48" fill={stroke} /> : null}
+                {lastPoint ? (
+                  <ellipse
+                    cx={lastPoint.x}
+                    cy={lastPoint.y}
+                    rx="0.79"
+                    ry="0.48"
+                    fill={stroke}
+                  />
+                ) : null}
               </g>
             );
           })}
@@ -566,6 +742,7 @@ export default function App() {
 
         {selectedEntry.markers.map((marker) => {
           const color = PLAYER_COLORS[marker.label];
+
           return (
             <button
               key={marker.id}
@@ -616,6 +793,7 @@ export default function App() {
           >
             {PLAYER_OPTIONS.map((player) => {
               const color = PLAYER_COLORS[player];
+
               return (
                 <button
                   key={player}
@@ -649,12 +827,19 @@ export default function App() {
       <div style={styles.shell}>
         <header style={styles.header}>
           <div style={styles.row}>
-            <button style={{ ...styles.button, ...styles.darkBtn }} onClick={() => setMobileView("sheet")}>
+            <button
+              style={{ ...styles.button, ...styles.darkBtn }}
+              onClick={() => setMobileView("sheet")}
+            >
               필드
             </button>
+
             <div style={{ display: "flex", gap: 8 }}>
               <button
-                style={{ ...styles.button, ...(mode === "marker" ? styles.lightBtn : styles.darkBtn) }}
+                style={{
+                  ...styles.button,
+                  ...(mode === "marker" ? styles.lightBtn : styles.darkBtn),
+                }}
                 onClick={() => {
                   setMode("marker");
                   setMarkerMenu(null);
@@ -662,8 +847,12 @@ export default function App() {
               >
                 📍
               </button>
+
               <button
-                style={{ ...styles.button, ...(mode === "draw" ? styles.lightBtn : styles.darkBtn) }}
+                style={{
+                  ...styles.button,
+                  ...(mode === "draw" ? styles.lightBtn : styles.darkBtn),
+                }}
                 onClick={() => {
                   setMode("draw");
                   setMarkerMenu(null);
@@ -676,22 +865,42 @@ export default function App() {
 
           <div style={{ ...styles.row, marginTop: 12, alignItems: "flex-start" }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>{selectedField.title}</p>
-              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#cbd5e1" }}>{formatDateLabel(selectedDate)}</p>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>
+                {selectedField.title}
+              </p>
+              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#cbd5e1" }}>
+                {formatDateLabel(selectedDate)}
+              </p>
             </div>
-            <button style={{ ...styles.button, ...styles.lightBtn, padding: "8px 12px", fontSize: 12 }} onClick={undoLastRoute}>
+
+            <button
+              style={{
+                ...styles.button,
+                ...styles.lightBtn,
+                padding: "8px 12px",
+                fontSize: 12,
+              }}
+              onClick={undoLastRoute}
+            >
               Undo
             </button>
           </div>
 
-          <input type="date" value={selectedDate} onChange={(e) => handleDateChange(e.target.value)} style={styles.dateInput} />
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => handleDateChange(e.target.value)}
+            style={styles.dateInput}
+          />
         </header>
 
         {mobileView === "sheet" ? (
-          <main style={styles.main}>
-            <section style={{ ...styles.card, width: "100%" }}>
+          <main style={styles.main} onClick={closeFieldActionMenu}>
+            <section style={styles.card}>
               <h2 style={styles.title}>필드 선택</h2>
-              <p style={styles.sub}>짧게 누르면 열리고, 길게 누르면 수정/삭제 메뉴가 떠.</p>
+              <p style={styles.sub}>
+                톡 누르면 필드가 열리고, 길게 누르면 수정/삭제 메뉴가 떠.
+              </p>
 
               {fields.map((field) => {
                 const selected = field.id === selectedFieldId;
@@ -722,18 +931,32 @@ export default function App() {
                             marginBottom: 8,
                           }}
                         />
+
                         <div style={{ display: "flex", gap: 8 }}>
                           <button
                             type="button"
                             onClick={() => saveFieldTitle(field.id)}
-                            style={{ ...styles.button, ...styles.smallAction, background: "#22c55e", color: "#ffffff", flex: 1 }}
+                            style={{
+                              ...styles.button,
+                              ...styles.smallAction,
+                              background: "#22c55e",
+                              color: "#ffffff",
+                              flex: 1,
+                            }}
                           >
                             저장
                           </button>
+
                           <button
                             type="button"
                             onClick={cancelEditField}
-                            style={{ ...styles.button, ...styles.smallAction, background: "#e2e8f0", color: "#0f172a", flex: 1 }}
+                            style={{
+                              ...styles.button,
+                              ...styles.smallAction,
+                              background: "#e2e8f0",
+                              color: "#0f172a",
+                              flex: 1,
+                            }}
                           >
                             취소
                           </button>
@@ -743,9 +966,9 @@ export default function App() {
                       <>
                         <button
                           type="button"
-                          onClick={() => {
-                            setSelectedFieldId(field.id);
-                            setMobileView("field");
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleFieldTap(field.id);
                           }}
                           onPointerDown={() => startFieldPress(field.id)}
                           onPointerUp={cancelFieldPress}
@@ -772,7 +995,10 @@ export default function App() {
                           <div style={{ display: "flex", gap: 8 }}>
                             <button
                               type="button"
-                              onClick={() => startEditField(field)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditField(field);
+                              }}
                               style={{
                                 ...styles.button,
                                 ...styles.smallAction,
@@ -783,14 +1009,19 @@ export default function App() {
                             >
                               이름 수정
                             </button>
+
                             <button
                               type="button"
-                              onClick={() => deleteField(field.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteField(field.id);
+                              }}
                               disabled={fields.length === 1}
                               style={{
                                 ...styles.button,
                                 ...styles.smallAction,
-                                background: fields.length === 1 ? "#cbd5e1" : "#ef4444",
+                                background:
+                                  fields.length === 1 ? "#cbd5e1" : "#ef4444",
                                 color: "#ffffff",
                                 flex: 1,
                                 opacity: fields.length === 1 ? 0.6 : 1,
@@ -800,7 +1031,15 @@ export default function App() {
                             </button>
                           </div>
                         ) : (
-                          <p style={{ margin: 0, fontSize: 12, color: selected ? "#cbd5e1" : "#64748b" }}>길게 눌러 수정 또는 삭제</p>
+                          <p
+                            style={{
+                              margin: 0,
+                              fontSize: 12,
+                              color: selected ? "#cbd5e1" : "#64748b",
+                            }}
+                          >
+                            길게 눌러 수정 또는 삭제
+                          </p>
                         )}
                       </>
                     )}
@@ -809,7 +1048,13 @@ export default function App() {
               })}
 
               <button
-                style={{ ...styles.button, background: "#0f172a", color: "white", width: "100%", marginTop: 8 }}
+                style={{
+                  ...styles.button,
+                  background: "#0f172a",
+                  color: "white",
+                  width: "100%",
+                  marginTop: 8,
+                }}
                 onClick={() => setShowAddInput((v) => !v)}
               >
                 + 필드 추가
@@ -821,9 +1066,22 @@ export default function App() {
                     value={newFieldTitle}
                     onChange={(e) => setNewFieldTitle(e.target.value)}
                     placeholder="필드 이름"
-                    style={{ flex: 1, borderRadius: 12, border: "1px solid #cbd5e1", padding: "10px 12px" }}
+                    style={{
+                      flex: 1,
+                      borderRadius: 12,
+                      border: "1px solid #cbd5e1",
+                      padding: "10px 12px",
+                    }}
                   />
-                  <button style={{ ...styles.button, background: "#0f172a", color: "white", fontSize: 12 }} onClick={addField}>
+                  <button
+                    style={{
+                      ...styles.button,
+                      background: "#0f172a",
+                      color: "white",
+                      fontSize: 12,
+                    }}
+                    onClick={addField}
+                  >
                     생성
                   </button>
                 </div>
@@ -831,31 +1089,70 @@ export default function App() {
             </section>
           </main>
         ) : (
-          <main style={styles.main} onTouchStart={handleSwipeStart} onTouchMove={handleSwipeMove} onTouchEnd={handleSwipeEnd}>
+          <main
+            style={styles.main}
+            onTouchStart={handleSwipeStart}
+            onTouchMove={handleSwipeMove}
+            onTouchEnd={handleSwipeEnd}
+            onClick={closeFieldActionMenu}
+          >
             {mobileView === "field" ? (
-              <section style={{ ...styles.section, width: "100%" }}>
+              <section style={styles.section}>
                 <div style={{ ...styles.row, marginBottom: 10 }}>
                   <div>
                     <h2 style={{ ...styles.title, fontSize: 16 }}>필드</h2>
-                    <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>좌측으로 밀면 일기 화면</p>
+                    <p
+                      style={{
+                        margin: "4px 0 0",
+                        fontSize: 12,
+                        color: "#64748b",
+                      }}
+                    >
+                      좌측으로 밀면 일기 화면
+                    </p>
                   </div>
                 </div>
+
                 {renderFieldCanvas()}
               </section>
             ) : (
-              <section style={{ ...styles.card, width: "100%" }}>
+              <section style={styles.card}>
                 <div style={{ ...styles.row, marginBottom: 10 }}>
                   <div>
                     <h2 style={styles.title}>훈련 일기</h2>
-                    <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>우측으로 밀면 필드 화면</p>
+                    <p
+                      style={{
+                        margin: "4px 0 0",
+                        fontSize: 12,
+                        color: "#64748b",
+                      }}
+                    >
+                      우측으로 밀면 필드 화면
+                    </p>
                   </div>
-                  <button style={{ ...styles.button, background: "#0f172a", color: "white", padding: "8px 12px", fontSize: 12 }} onClick={() => setMobileView("field")}>
+
+                  <button
+                    style={{
+                      ...styles.button,
+                      background: "#0f172a",
+                      color: "white",
+                      padding: "8px 12px",
+                      fontSize: 12,
+                    }}
+                    onClick={() => setMobileView("field")}
+                  >
                     필드 보기
                   </button>
                 </div>
+
                 <textarea
                   value={selectedEntry.journal}
-                  onChange={(e) => updateSelectedEntry((entry) => ({ ...entry, journal: e.target.value }))}
+                  onChange={(e) =>
+                    updateSelectedEntry((entry) => ({
+                      ...entry,
+                      journal: e.target.value,
+                    }))
+                  }
                   placeholder="훈련 내용을 기록하세요"
                   style={styles.textarea}
                 />
