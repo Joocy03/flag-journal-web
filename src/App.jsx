@@ -75,6 +75,7 @@ const styles = {
     padding: 12,
     paddingBottom: 24,
     overflowX: "hidden",
+    boxSizing: "border-box",
   },
   card: {
     marginTop: 12,
@@ -82,6 +83,8 @@ const styles = {
     borderRadius: 24,
     background: "#ffffff",
     padding: 16,
+    boxSizing: "border-box",
+    overflow: "hidden",
   },
   section: {
     marginTop: 12,
@@ -89,6 +92,8 @@ const styles = {
     borderRadius: 24,
     background: "#f8fafc",
     padding: 12,
+    boxSizing: "border-box",
+    overflow: "hidden",
   },
   title: { margin: 0, fontSize: 18, fontWeight: 700 },
   sub: { margin: "4px 0 12px", fontSize: 14, color: "#64748b" },
@@ -118,6 +123,7 @@ const styles = {
   },
   fieldItem: {
     width: "100%",
+    boxSizing: "border-box",
     borderRadius: 16,
     border: "1px solid #cbd5e1",
     padding: 14,
@@ -127,6 +133,7 @@ const styles = {
     cursor: "pointer",
     marginBottom: 8,
     background: "#ffffff",
+    overflow: "hidden",
   },
   smallAction: {
     padding: "8px 10px",
@@ -682,7 +689,7 @@ export default function App() {
 
         {mobileView === "sheet" ? (
           <main style={styles.main}>
-            <section style={styles.card}>
+            <section style={{ ...styles.card, width: "100%" }}>
               <h2 style={styles.title}>필드 선택</h2>
               <p style={styles.sub}>짧게 누르면 열리고, 길게 누르면 수정/삭제 메뉴가 떠.</p>
 
@@ -826,7 +833,7 @@ export default function App() {
         ) : (
           <main style={styles.main} onTouchStart={handleSwipeStart} onTouchMove={handleSwipeMove} onTouchEnd={handleSwipeEnd}>
             {mobileView === "field" ? (
-              <section style={styles.section}>
+              <section style={{ ...styles.section, width: "100%" }}>
                 <div style={{ ...styles.row, marginBottom: 10 }}>
                   <div>
                     <h2 style={{ ...styles.title, fontSize: 16 }}>필드</h2>
@@ -836,7 +843,7 @@ export default function App() {
                 {renderFieldCanvas()}
               </section>
             ) : (
-              <section style={styles.card}>
+              <section style={{ ...styles.card, width: "100%" }}>
                 <div style={{ ...styles.row, marginBottom: 10 }}>
                   <div>
                     <h2 style={styles.title}>훈련 일기</h2>
