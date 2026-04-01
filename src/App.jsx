@@ -211,6 +211,7 @@ export default function App() {
   const [newFieldTitle, setNewFieldTitle] = useState("");
   const [editingFieldId, setEditingFieldId] = useState(null);
   const [editingFieldTitle, setEditingFieldTitle] = useState("");
+  const [fieldActionMenuId, setFieldActionMenuId] = useState(null);
   const [markerMenu, setMarkerMenu] = useState(null);
   const [drawing, setDrawing] = useState(false);
   const [currentRoute, setCurrentRoute] = useState([]);
@@ -222,6 +223,7 @@ export default function App() {
   const [touchEndY, setTouchEndY] = useState(null);
 
   const fieldRef = useRef(null);
+  const fieldPressTimerRef = useRef(null);
   const suppressNextClickRef = useRef(false);
 
   const selectedField = fields.find((field) => field.id === selectedFieldId) ?? fields[0];
@@ -329,9 +331,21 @@ export default function App() {
     setMobileView("field");
   };
 
+  const startFieldPress = (fieldId) => {
+    clearTimeout(fieldPressTimerRef.current);
+    fieldPressTimerRef.current = setTimeout(() => {
+      setFieldActionMenuId(fieldId);
+    }, 450);
+  };
+
+  const cancelFieldPress = () => {
+    clearTimeout(fieldPressTimerRef.current);
+  };
+
   const startEditField = (field) => {
     setEditingFieldId(field.id);
     setEditingFieldTitle(field.title);
+    setFieldActionMenuId(null);
   };
 
   const saveFieldTitle = (fieldId) => {
@@ -340,11 +354,13 @@ export default function App() {
     updateField(fieldId, (field) => ({ ...field, title }));
     setEditingFieldId(null);
     setEditingFieldTitle("");
+    setFieldActionMenuId(null);
   };
 
   const cancelEditField = () => {
     setEditingFieldId(null);
     setEditingFieldTitle("");
+    setFieldActionMenuId(null);
   };
 
   const deleteField = (fieldId) => {
@@ -354,6 +370,7 @@ export default function App() {
     if (selectedFieldId === fieldId) {
       setSelectedFieldId(nextFields[0].id);
     }
+    setFieldActionMenuId(null);
     if (editingFieldId === fieldId) cancelEditField();
   };
 
@@ -667,11 +684,13 @@ export default function App() {
           <main style={styles.main}>
             <section style={styles.card}>
               <h2 style={styles.title}>필드 선택</h2>
-              <p style={styles.sub}>필드를 고르고 이름을 바꾸거나 추가할 수 있어.</p>
+              <p style={styles.sub}>짧게 누르면 열리고, 길게 누르면 수정/삭제 메뉴가 떠.</p>
 
               {fields.map((field) => {
                 const selected = field.id === selectedFieldId;
                 const editing = field.id === editingFieldId;
+                const actionOpen = field.id === fieldActionMenuId;
+
                 return (
                   <div
                     key={field.id}
@@ -721,6 +740,10 @@ export default function App() {
                             setSelectedFieldId(field.id);
                             setMobileView("field");
                           }}
+                          onPointerDown={() => startFieldPress(field.id)}
+                          onPointerUp={cancelFieldPress}
+                          onPointerLeave={cancelFieldPress}
+                          onPointerCancel={cancelFieldPress}
                           style={{
                             display: "block",
                             width: "100%",
@@ -737,30 +760,41 @@ export default function App() {
                         >
                           {field.title}
                         </button>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button
-                            type="button"
-                            onClick={() => startEditField(field)}
-                            style={{ ...styles.button, ...styles.smallAction, background: selected ? "#334155" : "#e2e8f0", color: selected ? "#ffffff" : "#0f172a", flex: 1 }}
-                          >
-                            이름 수정
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => deleteField(field.id)}
-                            disabled={fields.length === 1}
-                            style={{
-                              ...styles.button,
-                              ...styles.smallAction,
-                              background: fields.length === 1 ? "#cbd5e1" : "#ef4444",
-                              color: "#ffffff",
-                              flex: 1,
-                              opacity: fields.length === 1 ? 0.6 : 1,
-                            }}
-                          >
-                            삭제
-                          </button>
-                        </div>
+
+                        {actionOpen ? (
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button
+                              type="button"
+                              onClick={() => startEditField(field)}
+                              style={{
+                                ...styles.button,
+                                ...styles.smallAction,
+                                background: selected ? "#334155" : "#e2e8f0",
+                                color: selected ? "#ffffff" : "#0f172a",
+                                flex: 1,
+                              }}
+                            >
+                              이름 수정
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteField(field.id)}
+                              disabled={fields.length === 1}
+                              style={{
+                                ...styles.button,
+                                ...styles.smallAction,
+                                background: fields.length === 1 ? "#cbd5e1" : "#ef4444",
+                                color: "#ffffff",
+                                flex: 1,
+                                opacity: fields.length === 1 ? 0.6 : 1,
+                              }}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        ) : (
+                          <p style={{ margin: 0, fontSize: 12, color: selected ? "#cbd5e1" : "#64748b" }}>길게 눌러 수정 또는 삭제</p>
+                        )}
                       </>
                     )}
                   </div>
