@@ -12,6 +12,16 @@ const PLAYER_COLORS = {
 };
 
 const styles = {
+  shell: {
+    width: "100%",
+    maxWidth: 430,
+    minHeight: "100vh",
+    margin: "0 auto",
+    background: "#ffffff",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+    overflowX: "hidden",
+    touchAction: "pan-y",
+  },
   page: {
     minHeight: "100vh",
     background: "#f1f5f9",
@@ -209,9 +219,33 @@ export default function App() {
   const [currentRoute, setCurrentRoute] = useState([]);
   const [selectedRoutePlayer, setSelectedRoutePlayer] = useState("X");
   const [draggingMarkerId, setDraggingMarkerId] = useState(null);
+  const [mobileView, setMobileView] = useState("sheet");
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchEndX, setTouchEndX] = useState(null);
 
   const fieldRef = useRef(null);
   const suppressNextClickRef = useRef(false);
+
+  const handleSwipeStart = (e) => {
+    const x = e.touches?.[0]?.clientX;
+    if (typeof x === "number") {
+      setTouchStartX(x);
+      setTouchEndX(null);
+    }
+  };
+
+  const handleSwipeMove = (e) => {
+    const x = e.touches?.[0]?.clientX;
+    if (typeof x === "number") setTouchEndX(x);
+  };
+
+  const handleSwipeEnd = () => {
+    if (touchStartX == null || touchEndX == null) return;
+    const delta = touchStartX - touchEndX;
+    if (Math.abs(delta) < 50) return;
+    if (delta > 0) setMobileView("journal");
+    else setMobileView("field");
+  };
 
   const selectedField = fields.find((field) => field.id === selectedFieldId) ?? fields[0];
   const selectedEntry = selectedField?.dateEntries?.[selectedDate] ?? createEntry();
@@ -286,6 +320,7 @@ export default function App() {
     setNewFieldTitle("");
     setShowAddInput(false);
     setShowFieldSheet(false);
+    setMobileView("field");
   };
 
   const addMarker = (label) => {
@@ -394,7 +429,7 @@ export default function App() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.app}>
+      <div style={styles.shell}>
         <header style={styles.header}>
           <div style={styles.row}>
             <button style={{ ...styles.button, ...styles.darkBtn }} onClick={() => setShowFieldSheet(true)}>
@@ -435,8 +470,71 @@ export default function App() {
           <input type="date" value={selectedDate} onChange={(e) => handleDateChange(e.target.value)} style={styles.dateInput} />
         </header>
 
-        <main style={{ padding: 12, paddingBottom: 24 }}>
+        {mobileView === "sheet" ? (
+        <main style={{ padding: 12, paddingBottom: 24, overflowX: "hidden" }}>
+          </section>
+        ) : (
+          <section style={styles.journalCard}>
+            <div style={{ ...styles.row, alignItems: "center", marginBottom: 10 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>훈련 일기</h2>
+                <p style={{ margin: "4px 0 0", fontSize: 14, color: "#64748b" }}>우측으로 밀면 필드 화면</p>
+              </div>
+              <button style={{ ...styles.button, background: "#0f172a", color: "white", padding: "8px 12px", fontSize: 12 }} onClick={() => setMobileView("field")}>필드 보기</button>
+            </div>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>필드 선택</h2>
+            <p style={{ margin: "4px 0 12px", fontSize: 14, color: "#64748b" }}>먼저 필드를 고른 뒤 좌우로 넘겨 필드와 일기를 확인해.</p>
+            <div>
+              {fields.map((field) => (
+                <button
+                  key={field.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedFieldId(field.id);
+                    setMobileView("field");
+                  }}
+                  style={{
+                    ...styles.fieldItem,
+                    background: field.id === selectedFieldId ? "#0f172a" : "#ffffff",
+                    color: field.id === selectedFieldId ? "#ffffff" : "#0f172a",
+                    borderColor: field.id === selectedFieldId ? "#0f172a" : "#cbd5e1",
+                  }}
+                >
+                  {field.title}
+                </button>
+              ))}
+            </div>
+            <button style={{ ...styles.button, background: "#0f172a", color: "white", width: "100%", marginTop: 8 }} onClick={() => setShowAddInput((v) => !v)}>
+              + 필드 추가
+            </button>
+            {showAddInput && (
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <input
+                  value={newFieldTitle}
+                  onChange={(e) => setNewFieldTitle(e.target.value)}
+                  placeholder="필드 이름"
+                  style={{ flex: 1, borderRadius: 12, border: "1px solid #cbd5e1", padding: "10px 12px" }}
+                />
+                <button style={{ ...styles.button, background: "#0f172a", color: "white", fontSize: 12 }} onClick={addField}>
+                  생성
+                </button>
+              </div>
+            )}
+          </section>
+        </section>
+        )}
+        </main>
+      ) : (
+        <main style={{ padding: 12, paddingBottom: 24, overflowX: "hidden" }} onTouchStart={handleSwipeStart} onTouchMove={handleSwipeMove} onTouchEnd={handleSwipeEnd}>
+          {mobileView === "field" ? (
           <section style={styles.section}>
+            <div style={{ ...styles.row, alignItems: "center", marginBottom: 10 }}>
+              <div>
+                <h2 style={styles.title}>필드</h2>
+                <p style={styles.sub}>좌측으로 밀면 일기 화면</p>
+              </div>
+              <button style={{ ...styles.button, background: "#0f172a", color: "white", padding: "8px 12px", fontSize: 12 }} onClick={() => setMobileView("sheet")}>필드 목록</button>
+            </div>
             <h2 style={styles.title}>필드</h2>
             <p style={styles.sub}>아이폰 세로 화면 기준</p>
 
