@@ -470,73 +470,14 @@ export default function App() {
           <input type="date" value={selectedDate} onChange={(e) => handleDateChange(e.target.value)} style={styles.dateInput} />
         </header>
 
-        {mobileView === "sheet" ? (
-        <main style={{ padding: 12, paddingBottom: 24, overflowX: "hidden" }}>
-          </section>
-        ) : (
-          <section style={styles.journalCard}>
-            <div style={{ ...styles.row, alignItems: "center", marginBottom: 10 }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>훈련 일기</h2>
-                <p style={{ margin: "4px 0 0", fontSize: 14, color: "#64748b" }}>우측으로 밀면 필드 화면</p>
-              </div>
-              <button style={{ ...styles.button, background: "#0f172a", color: "white", padding: "8px 12px", fontSize: 12 }} onClick={() => setMobileView("field")}>필드 보기</button>
-            </div>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>필드 선택</h2>
-            <p style={{ margin: "4px 0 12px", fontSize: 14, color: "#64748b" }}>먼저 필드를 고른 뒤 좌우로 넘겨 필드와 일기를 확인해.</p>
-            <div>
-              {fields.map((field) => (
-                <button
-                  key={field.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedFieldId(field.id);
-                    setMobileView("field");
-                  }}
-                  style={{
-                    ...styles.fieldItem,
-                    background: field.id === selectedFieldId ? "#0f172a" : "#ffffff",
-                    color: field.id === selectedFieldId ? "#ffffff" : "#0f172a",
-                    borderColor: field.id === selectedFieldId ? "#0f172a" : "#cbd5e1",
-                  }}
-                >
-                  {field.title}
-                </button>
-              ))}
-            </div>
-            <button style={{ ...styles.button, background: "#0f172a", color: "white", width: "100%", marginTop: 8 }} onClick={() => setShowAddInput((v) => !v)}>
-              + 필드 추가
-            </button>
-            {showAddInput && (
-              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <input
-                  value={newFieldTitle}
-                  onChange={(e) => setNewFieldTitle(e.target.value)}
-                  placeholder="필드 이름"
-                  style={{ flex: 1, borderRadius: 12, border: "1px solid #cbd5e1", padding: "10px 12px" }}
-                />
-                <button style={{ ...styles.button, background: "#0f172a", color: "white", fontSize: 12 }} onClick={addField}>
-                  생성
-                </button>
-              </div>
-            )}
-          </section>
-        </section>
-        )}
-        </main>
-      ) : (
         <main style={{ padding: 12, paddingBottom: 24, overflowX: "hidden" }} onTouchStart={handleSwipeStart} onTouchMove={handleSwipeMove} onTouchEnd={handleSwipeEnd}>
-          {mobileView === "field" ? (
           <section style={styles.section}>
             <div style={{ ...styles.row, alignItems: "center", marginBottom: 10 }}>
               <div>
                 <h2 style={styles.title}>필드</h2>
                 <p style={styles.sub}>좌측으로 밀면 일기 화면</p>
               </div>
-              <button style={{ ...styles.button, background: "#0f172a", color: "white", padding: "8px 12px", fontSize: 12 }} onClick={() => setMobileView("sheet")}>필드 목록</button>
             </div>
-            <h2 style={styles.title}>필드</h2>
-            <p style={styles.sub}>아이폰 세로 화면 기준</p>
 
             <div style={styles.fieldWrap}>
               <div
@@ -551,28 +492,6 @@ export default function App() {
               >
                 <div style={{ position: "absolute", insetInline: 0, top: 0, height: "10%", borderBottom: "4px solid rgba(255,255,255,0.9)", background: "rgba(16,185,129,0.55)" }} />
                 <div style={{ position: "absolute", insetInline: 0, bottom: 0, height: "10%", borderTop: "4px solid rgba(255,255,255,0.9)", background: "rgba(16,185,129,0.55)" }} />
-                <div style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 4, transform: "translateY(-50%)", background: "rgba(255,255,255,0.95)" }} />
-
-                {[5, 10, 15, 20, 25, 30, 35, 40, 45].map((yard) => (
-                  <div
-                    key={yard}
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      right: 0,
-                      height: 2,
-                      top: `${(yard / 50) * 80 + 10}%`,
-                      background: "rgba(255,255,255,0.4)",
-                    }}
-                  />
-                ))}
-
-                <div style={{ position: "absolute", left: "50%", top: 12, transform: "translateX(-50%)", background: "rgba(255,255,255,0.9)", color: "#047857", padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
-                  END ZONE
-                </div>
-                <div style={{ position: "absolute", left: "50%", bottom: 12, transform: "translateX(-50%)", background: "rgba(255,255,255,0.9)", color: "#047857", padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
-                  END ZONE
-                </div>
 
                 <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} viewBox="0 0 100 100" preserveAspectRatio="none">
                   {selectedEntry.routes.map((route, i) => {
@@ -588,33 +507,11 @@ export default function App() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           fill="none"
-                          vectorEffect="non-scaling-stroke"
                         />
                         {lastPoint ? <ellipse cx={lastPoint.x} cy={lastPoint.y} rx="0.79" ry="0.48" fill={stroke} /> : null}
                       </g>
                     );
                   })}
-
-                  {drawing && currentRoute.length > 1 ? (
-                    <g>
-                      <polyline
-                        points={currentRoute.map((p) => `${p.x},${p.y}`).join(" ")}
-                        stroke={PLAYER_COLORS[selectedRoutePlayer].stroke}
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        fill="none"
-                        vectorEffect="non-scaling-stroke"
-                      />
-                      <ellipse
-                        cx={currentRoute[currentRoute.length - 1].x}
-                        cy={currentRoute[currentRoute.length - 1].y}
-                        rx="0.79"
-                        ry="0.48"
-                        fill={PLAYER_COLORS[selectedRoutePlayer].stroke}
-                      />
-                    </g>
-                  ) : null}
                 </svg>
 
                 {selectedEntry.markers.map((marker) => {
@@ -624,10 +521,6 @@ export default function App() {
                       key={marker.id}
                       type="button"
                       onPointerDown={(event) => startMarkerDrag(event, marker.id)}
-                      onDoubleClick={(event) => {
-                        event.stopPropagation();
-                        removeMarker(marker.id);
-                      }}
                       style={{
                         position: "absolute",
                         left: `${marker.x}%`,
@@ -637,77 +530,7 @@ export default function App() {
                         height: 32,
                         borderRadius: 999,
                         border: "2px solid white",
-                        background: color.bg,
-                        color: color.text,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-                        cursor: "pointer",
-                        touchAction: "none",
-                      }}
-                    >
-                      {marker.label}
-                    </button>
-                  );
-                })}
-
-                {markerMenu && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: `${markerMenu.x}%`,
-                      top: `${markerMenu.y}%`,
-                      transform: "translate(-50%, -50%)",
-                      display: "flex",
-                      gap: 6,
-                      background: "white",
-                      padding: 8,
-                      borderRadius: 16,
-                      boxShadow: "0 6px 14px rgba(0,0,0,0.2)",
-                    }}
-                  >
-                    {PLAYER_OPTIONS.map((player) => {
-                      const color = PLAYER_COLORS[player];
-                      return (
-                        <button
-                          key={player}
-                          type="button"
-                          onClick={() => addMarker(player)}
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 999,
-                            border: "none",
-                            background: color.bg,
-                            color: color.text,
-                            fontSize: 12,
-                            fontWeight: 700,
-                            cursor: "pointer",
-                          }}
-                        >
-                          {player}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-
-          <section style={styles.journalCard}>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>훈련 일기</h2>
-            <p style={{ margin: "4px 0 12px", fontSize: 14, color: "#64748b" }}>날짜별로 따로 저장돼.</p>
-            <textarea
-              value={selectedEntry.journal}
-              onChange={(e) => updateSelectedEntry((entry) => ({ ...entry, journal: e.target.value }))}
-              placeholder="훈련 내용을 기록하세요"
-              style={styles.textarea}
-            />
-          </section>
-        </main>
-
-        {showFieldSheet && (
+                        background: (
           <div style={styles.sheetBackdrop} onClick={() => setShowFieldSheet(false)}>
             <div style={styles.sheet} onClick={(e) => e.stopPropagation()}>
               <div style={{ width: 48, height: 6, borderRadius: 999, background: "#cbd5e1", margin: "0 auto 16px" }} />
