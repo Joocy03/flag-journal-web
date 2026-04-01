@@ -54,6 +54,9 @@ const styles = {
   lightBtn: { background: "#ffffff", color: "#0f172a" },
   dateInput: {
     width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    display: "block",
     marginTop: 8,
     borderRadius: 12,
     border: "1px solid #475569",
@@ -62,6 +65,8 @@ const styles = {
     padding: "10px 12px",
     fontSize: 14,
     boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
   },
   main: {
     padding: 12,
