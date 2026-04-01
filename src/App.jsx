@@ -7,7 +7,7 @@ const PLAYER_COLORS = {
   X: { bg: "#ef4444", stroke: "#ef4444", text: "#ffffff" },
   Y: { bg: "#3b82f6", stroke: "#3b82f6", text: "#ffffff" },
   C: { bg: "#22c55e", stroke: "#22c55e", text: "#ffffff" },
-  Z: { bg: "#facc15", stroke: "#facc15", text: "#ffffff" },
+  Z: { bg: "#facc15", stroke: "#ffffff", text: "#ffffff" },
   Q: { bg: "#a855f7", stroke: "#a855f7", text: "#ffffff" },
 };
 
@@ -128,6 +128,11 @@ const styles = {
     marginBottom: 8,
     background: "#ffffff",
   },
+  smallAction: {
+    padding: "8px 10px",
+    fontSize: 12,
+    borderRadius: 10,
+  },
 };
 
 const createEntry = () => ({ journal: "", markers: [], routes: [] });
@@ -159,15 +164,11 @@ function getRouteStroke(route) {
 }
 
 function clampMenuPosition(pos) {
-  const menuWidth = 26; // percent approximation for 5 buttons
+  const menuWidth = 30;
   const menuHalf = menuWidth / 2;
-  const minX = menuHalf + 2;
-  const maxX = 100 - menuHalf - 2;
-  const minY = 8;
-  const maxY = 92;
   return {
-    x: Math.min(Math.max(pos.x, minX), maxX),
-    y: Math.min(Math.max(pos.y, minY), maxY),
+    x: Math.min(Math.max(pos.x, menuHalf + 2), 100 - menuHalf - 2),
+    y: Math.min(Math.max(pos.y, 8), 92),
   };
 }
 
@@ -204,11 +205,12 @@ export default function App() {
       return TODAY;
     }
   });
-
   const [mode, setMode] = useState("marker");
   const [mobileView, setMobileView] = useState("sheet");
   const [showAddInput, setShowAddInput] = useState(false);
   const [newFieldTitle, setNewFieldTitle] = useState("");
+  const [editingFieldId, setEditingFieldId] = useState(null);
+  const [editingFieldTitle, setEditingFieldTitle] = useState("");
   const [markerMenu, setMarkerMenu] = useState(null);
   const [drawing, setDrawing] = useState(false);
   const [currentRoute, setCurrentRoute] = useState([]);
@@ -325,6 +327,34 @@ export default function App() {
     setNewFieldTitle("");
     setShowAddInput(false);
     setMobileView("field");
+  };
+
+  const startEditField = (field) => {
+    setEditingFieldId(field.id);
+    setEditingFieldTitle(field.title);
+  };
+
+  const saveFieldTitle = (fieldId) => {
+    const title = editingFieldTitle.trim();
+    if (!title) return;
+    updateField(fieldId, (field) => ({ ...field, title }));
+    setEditingFieldId(null);
+    setEditingFieldTitle("");
+  };
+
+  const cancelEditField = () => {
+    setEditingFieldId(null);
+    setEditingFieldTitle("");
+  };
+
+  const deleteField = (fieldId) => {
+    if (fields.length === 1) return;
+    const nextFields = fields.filter((field) => field.id !== fieldId);
+    setFields(nextFields);
+    if (selectedFieldId === fieldId) {
+      setSelectedFieldId(nextFields[0].id);
+    }
+    if (editingFieldId === fieldId) cancelEditField();
   };
 
   const addMarker = (label) => {
@@ -637,26 +667,105 @@ export default function App() {
           <main style={styles.main}>
             <section style={styles.card}>
               <h2 style={styles.title}>필드 선택</h2>
-              <p style={styles.sub}>먼저 필드를 고른 뒤 좌우로 넘겨 필드와 일기를 확인해.</p>
+              <p style={styles.sub}>필드를 고르고 이름을 바꾸거나 추가할 수 있어.</p>
 
-              {fields.map((field) => (
-                <button
-                  key={field.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedFieldId(field.id);
-                    setMobileView("field");
-                  }}
-                  style={{
-                    ...styles.fieldItem,
-                    background: field.id === selectedFieldId ? "#0f172a" : "#ffffff",
-                    color: field.id === selectedFieldId ? "#ffffff" : "#0f172a",
-                    borderColor: field.id === selectedFieldId ? "#0f172a" : "#cbd5e1",
-                  }}
-                >
-                  {field.title}
-                </button>
-              ))}
+              {fields.map((field) => {
+                const selected = field.id === selectedFieldId;
+                const editing = field.id === editingFieldId;
+                return (
+                  <div
+                    key={field.id}
+                    style={{
+                      ...styles.fieldItem,
+                      background: selected ? "#0f172a" : "#ffffff",
+                      color: selected ? "#ffffff" : "#0f172a",
+                      borderColor: selected ? "#0f172a" : "#cbd5e1",
+                    }}
+                  >
+                    {editing ? (
+                      <>
+                        <input
+                          value={editingFieldTitle}
+                          onChange={(e) => setEditingFieldTitle(e.target.value)}
+                          style={{
+                            width: "100%",
+                            boxSizing: "border-box",
+                            padding: "10px 12px",
+                            borderRadius: 10,
+                            border: "1px solid #cbd5e1",
+                            marginBottom: 8,
+                          }}
+                        />
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            type="button"
+                            onClick={() => saveFieldTitle(field.id)}
+                            style={{ ...styles.button, ...styles.smallAction, background: "#22c55e", color: "#ffffff", flex: 1 }}
+                          >
+                            저장
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEditField}
+                            style={{ ...styles.button, ...styles.smallAction, background: "#e2e8f0", color: "#0f172a", flex: 1 }}
+                          >
+                            취소
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedFieldId(field.id);
+                            setMobileView("field");
+                          }}
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            border: "none",
+                            background: "transparent",
+                            color: "inherit",
+                            textAlign: "left",
+                            padding: 0,
+                            fontSize: 14,
+                            fontWeight: 700,
+                            marginBottom: 10,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {field.title}
+                        </button>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            type="button"
+                            onClick={() => startEditField(field)}
+                            style={{ ...styles.button, ...styles.smallAction, background: selected ? "#334155" : "#e2e8f0", color: selected ? "#ffffff" : "#0f172a", flex: 1 }}
+                          >
+                            이름 수정
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteField(field.id)}
+                            disabled={fields.length === 1}
+                            style={{
+                              ...styles.button,
+                              ...styles.smallAction,
+                              background: fields.length === 1 ? "#cbd5e1" : "#ef4444",
+                              color: "#ffffff",
+                              flex: 1,
+                              opacity: fields.length === 1 ? 0.6 : 1,
+                            }}
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
 
               <button
                 style={{ ...styles.button, background: "#0f172a", color: "white", width: "100%", marginTop: 8 }}
