@@ -17,6 +17,7 @@ const styles = {
     background: "#f1f5f9",
     color: "#0f172a",
     fontFamily: "Arial, sans-serif",
+    overflowX: "hidden",
   },
   shell: {
     width: "100%",
@@ -26,6 +27,7 @@ const styles = {
     background: "#ffffff",
     boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
     overflowX: "hidden",
+    position: "relative",
   },
   header: {
     position: "sticky",
@@ -49,6 +51,7 @@ const styles = {
     fontSize: 14,
     fontWeight: 700,
     cursor: "pointer",
+    WebkitTapHighlightColor: "transparent",
   },
   darkBtn: { background: "#334155", color: "#ffffff" },
   lightBtn: { background: "#ffffff", color: "#0f172a" },
@@ -155,6 +158,19 @@ function getRouteStroke(route) {
   return PLAYER_COLORS[route?.player]?.stroke ?? "#ffffff";
 }
 
+function clampMenuPosition(pos) {
+  const menuWidth = 26; // percent approximation for 5 buttons
+  const menuHalf = menuWidth / 2;
+  const minX = menuHalf + 2;
+  const maxX = 100 - menuHalf - 2;
+  const minY = 8;
+  const maxY = 92;
+  return {
+    x: Math.min(Math.max(pos.x, minX), maxX),
+    y: Math.min(Math.max(pos.y, minY), maxY),
+  };
+}
+
 export default function App() {
   const initialFields = useMemo(
     () => [
@@ -199,7 +215,9 @@ export default function App() {
   const [selectedRoutePlayer, setSelectedRoutePlayer] = useState("X");
   const [draggingMarkerId, setDraggingMarkerId] = useState(null);
   const [touchStartX, setTouchStartX] = useState(null);
+  const [touchStartY, setTouchStartY] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
+  const [touchEndY, setTouchEndY] = useState(null);
 
   const fieldRef = useRef(null);
   const suppressNextClickRef = useRef(false);
@@ -257,22 +275,31 @@ export default function App() {
 
   const handleSwipeStart = (e) => {
     const x = e.touches?.[0]?.clientX;
-    if (typeof x === "number") {
+    const y = e.touches?.[0]?.clientY;
+    if (typeof x === "number" && typeof y === "number") {
       setTouchStartX(x);
+      setTouchStartY(y);
       setTouchEndX(null);
+      setTouchEndY(null);
     }
   };
 
   const handleSwipeMove = (e) => {
     const x = e.touches?.[0]?.clientX;
-    if (typeof x === "number") setTouchEndX(x);
+    const y = e.touches?.[0]?.clientY;
+    if (typeof x === "number" && typeof y === "number") {
+      setTouchEndX(x);
+      setTouchEndY(y);
+    }
   };
 
   const handleSwipeEnd = () => {
-    if (touchStartX == null || touchEndX == null) return;
-    const delta = touchStartX - touchEndX;
-    if (Math.abs(delta) < 50) return;
-    if (delta > 0) setMobileView("journal");
+    if (touchStartX == null || touchEndX == null || touchStartY == null || touchEndY == null) return;
+    const deltaX = touchStartX - touchEndX;
+    const deltaY = touchStartY - touchEndY;
+    if (Math.abs(deltaX) < 50) return;
+    if (Math.abs(deltaY) > Math.abs(deltaX) * 0.8) return;
+    if (deltaX > 0) setMobileView("journal");
     else setMobileView("field");
   };
 
@@ -321,7 +348,7 @@ export default function App() {
       suppressNextClickRef.current = false;
       return;
     }
-    const pos = getPos(event);
+    const pos = clampMenuPosition(getPos(event));
     if (markerMenu) {
       setMarkerMenu(null);
       return;
@@ -402,6 +429,166 @@ export default function App() {
     if (!selectedEntry.routes.length) return;
     updateSelectedEntry((entry) => ({ ...entry, routes: entry.routes.slice(0, -1) }));
   };
+
+  const renderFieldCanvas = () => (
+    <div style={styles.fieldWrap}>
+      <div
+        ref={fieldRef}
+        style={styles.field}
+        onClick={handleFieldClick}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={finishInteraction}
+        onPointerCancel={finishInteraction}
+        onPointerLeave={finishInteraction}
+      >
+        <div style={{ position: "absolute", insetInline: 0, top: 0, height: "10%", borderBottom: "4px solid rgba(255,255,255,0.9)", background: "rgba(16,185,129,0.55)" }} />
+        <div style={{ position: "absolute", insetInline: 0, bottom: 0, height: "10%", borderTop: "4px solid rgba(255,255,255,0.9)", background: "rgba(16,185,129,0.55)" }} />
+        <div style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 4, transform: "translateY(-50%)", background: "rgba(255,255,255,0.95)" }} />
+
+        {[5, 10, 15, 20, 25, 30, 35, 40, 45].map((yard) => (
+          <div
+            key={yard}
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              height: 2,
+              top: `${(yard / 50) * 80 + 10}%`,
+              background: "rgba(255,255,255,0.4)",
+            }}
+          />
+        ))}
+
+        <div style={{ position: "absolute", left: "50%", top: 12, transform: "translateX(-50%)", background: "rgba(255,255,255,0.9)", color: "#047857", padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
+          END ZONE
+        </div>
+        <div style={{ position: "absolute", left: "50%", bottom: 12, transform: "translateX(-50%)", background: "rgba(255,255,255,0.9)", color: "#047857", padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
+          END ZONE
+        </div>
+
+        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} viewBox="0 0 100 100" preserveAspectRatio="none">
+          {selectedEntry.routes.map((route, i) => {
+            const stroke = getRouteStroke(route);
+            const points = getRoutePoints(route);
+            const lastPoint = points[points.length - 1];
+            return (
+              <g key={Array.isArray(route) ? `legacy-${i}` : route.id}>
+                <polyline
+                  points={points.map((p) => `${p.x},${p.y}`).join(" ")}
+                  stroke={stroke}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  vectorEffect="non-scaling-stroke"
+                />
+                {lastPoint ? <ellipse cx={lastPoint.x} cy={lastPoint.y} rx="0.79" ry="0.48" fill={stroke} /> : null}
+              </g>
+            );
+          })}
+
+          {drawing && currentRoute.length > 1 ? (
+            <g>
+              <polyline
+                points={currentRoute.map((p) => `${p.x},${p.y}`).join(" ")}
+                stroke={PLAYER_COLORS[selectedRoutePlayer].stroke}
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                vectorEffect="non-scaling-stroke"
+              />
+              <ellipse
+                cx={currentRoute[currentRoute.length - 1].x}
+                cy={currentRoute[currentRoute.length - 1].y}
+                rx="0.79"
+                ry="0.48"
+                fill={PLAYER_COLORS[selectedRoutePlayer].stroke}
+              />
+            </g>
+          ) : null}
+        </svg>
+
+        {selectedEntry.markers.map((marker) => {
+          const color = PLAYER_COLORS[marker.label];
+          return (
+            <button
+              key={marker.id}
+              type="button"
+              onPointerDown={(event) => startMarkerDrag(event, marker.id)}
+              onDoubleClick={(event) => {
+                event.stopPropagation();
+                removeMarker(marker.id);
+              }}
+              style={{
+                position: "absolute",
+                left: `${marker.x}%`,
+                top: `${marker.y}%`,
+                transform: "translate(-50%, -50%)",
+                width: 32,
+                height: 32,
+                borderRadius: 999,
+                border: "2px solid white",
+                background: color.bg,
+                color: color.text,
+                fontSize: 12,
+                fontWeight: 700,
+                boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                cursor: "pointer",
+                touchAction: "none",
+              }}
+            >
+              {marker.label}
+            </button>
+          );
+        })}
+
+        {markerMenu && (
+          <div
+            style={{
+              position: "absolute",
+              left: `${markerMenu.x}%`,
+              top: `${markerMenu.y}%`,
+              transform: "translate(-50%, -50%)",
+              display: "flex",
+              gap: 6,
+              background: "white",
+              padding: 8,
+              borderRadius: 16,
+              boxShadow: "0 6px 14px rgba(0,0,0,0.2)",
+              maxWidth: "92%",
+            }}
+          >
+            {PLAYER_OPTIONS.map((player) => {
+              const color = PLAYER_COLORS[player];
+              return (
+                <button
+                  key={player}
+                  type="button"
+                  onClick={() => addMarker(player)}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 999,
+                    border: "none",
+                    background: color.bg,
+                    color: color.text,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    flex: "0 0 auto",
+                  }}
+                >
+                  {player}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div style={styles.page}>
@@ -503,162 +690,7 @@ export default function App() {
                     <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748b" }}>좌측으로 밀면 일기 화면</p>
                   </div>
                 </div>
-
-                <div style={styles.fieldWrap}>
-                  <div
-                    ref={fieldRef}
-                    style={styles.field}
-                    onClick={handleFieldClick}
-                    onPointerDown={handlePointerDown}
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={finishInteraction}
-                    onPointerCancel={finishInteraction}
-                    onPointerLeave={finishInteraction}
-                  >
-                    <div style={{ position: "absolute", insetInline: 0, top: 0, height: "10%", borderBottom: "4px solid rgba(255,255,255,0.9)", background: "rgba(16,185,129,0.55)" }} />
-                    <div style={{ position: "absolute", insetInline: 0, bottom: 0, height: "10%", borderTop: "4px solid rgba(255,255,255,0.9)", background: "rgba(16,185,129,0.55)" }} />
-                    <div style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 4, transform: "translateY(-50%)", background: "rgba(255,255,255,0.95)" }} />
-
-                    {[5, 10, 15, 20, 25, 30, 35, 40, 45].map((yard) => (
-                      <div
-                        key={yard}
-                        style={{
-                          position: "absolute",
-                          left: 0,
-                          right: 0,
-                          height: 2,
-                          top: `${(yard / 50) * 80 + 10}%`,
-                          background: "rgba(255,255,255,0.4)",
-                        }}
-                      />
-                    ))}
-
-                    <div style={{ position: "absolute", left: "50%", top: 12, transform: "translateX(-50%)", background: "rgba(255,255,255,0.9)", color: "#047857", padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
-                      END ZONE
-                    </div>
-                    <div style={{ position: "absolute", left: "50%", bottom: 12, transform: "translateX(-50%)", background: "rgba(255,255,255,0.9)", color: "#047857", padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
-                      END ZONE
-                    </div>
-
-                    <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} viewBox="0 0 100 100" preserveAspectRatio="none">
-                      {selectedEntry.routes.map((route, i) => {
-                        const stroke = getRouteStroke(route);
-                        const points = getRoutePoints(route);
-                        const lastPoint = points[points.length - 1];
-                        return (
-                          <g key={Array.isArray(route) ? `legacy-${i}` : route.id}>
-                            <polyline
-                              points={points.map((p) => `${p.x},${p.y}`).join(" ")}
-                              stroke={stroke}
-                              strokeWidth="1.8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              fill="none"
-                              vectorEffect="non-scaling-stroke"
-                            />
-                            {lastPoint ? <ellipse cx={lastPoint.x} cy={lastPoint.y} rx="0.79" ry="0.48" fill={stroke} /> : null}
-                          </g>
-                        );
-                      })}
-
-                      {drawing && currentRoute.length > 1 ? (
-                        <g>
-                          <polyline
-                            points={currentRoute.map((p) => `${p.x},${p.y}`).join(" ")}
-                            stroke={PLAYER_COLORS[selectedRoutePlayer].stroke}
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            fill="none"
-                            vectorEffect="non-scaling-stroke"
-                          />
-                          <ellipse
-                            cx={currentRoute[currentRoute.length - 1].x}
-                            cy={currentRoute[currentRoute.length - 1].y}
-                            rx="0.79"
-                            ry="0.48"
-                            fill={PLAYER_COLORS[selectedRoutePlayer].stroke}
-                          />
-                        </g>
-                      ) : null}
-                    </svg>
-
-                    {selectedEntry.markers.map((marker) => {
-                      const color = PLAYER_COLORS[marker.label];
-                      return (
-                        <button
-                          key={marker.id}
-                          type="button"
-                          onPointerDown={(event) => startMarkerDrag(event, marker.id)}
-                          onDoubleClick={(event) => {
-                            event.stopPropagation();
-                            removeMarker(marker.id);
-                          }}
-                          style={{
-                            position: "absolute",
-                            left: `${marker.x}%`,
-                            top: `${marker.y}%`,
-                            transform: "translate(-50%, -50%)",
-                            width: 32,
-                            height: 32,
-                            borderRadius: 999,
-                            border: "2px solid white",
-                            background: color.bg,
-                            color: color.text,
-                            fontSize: 12,
-                            fontWeight: 700,
-                            boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-                            cursor: "pointer",
-                            touchAction: "none",
-                          }}
-                        >
-                          {marker.label}
-                        </button>
-                      );
-                    })}
-
-                    {markerMenu && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: `${markerMenu.x}%`,
-                          top: `${markerMenu.y}%`,
-                          transform: "translate(-50%, -50%)",
-                          display: "flex",
-                          gap: 6,
-                          background: "white",
-                          padding: 8,
-                          borderRadius: 16,
-                          boxShadow: "0 6px 14px rgba(0,0,0,0.2)",
-                        }}
-                      >
-                        {PLAYER_OPTIONS.map((player) => {
-                          const color = PLAYER_COLORS[player];
-                          return (
-                            <button
-                              key={player}
-                              type="button"
-                              onClick={() => addMarker(player)}
-                              style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 999,
-                                border: "none",
-                                background: color.bg,
-                                color: color.text,
-                                fontSize: 12,
-                                fontWeight: 700,
-                                cursor: "pointer",
-                              }}
-                            >
-                              {player}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {renderFieldCanvas()}
               </section>
             ) : (
               <section style={styles.card}>
